@@ -21,6 +21,13 @@ NEWSPIDER_MODULE = 'tutorial.spiders'
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
 
+# Connect to database
+MYSQL_HOST = "localhost"
+MYSQL_DB = "python_practice"
+MYSQL_USER = "root"
+MYSQL_PASSWORD = ""
+MYSQL_PORT = 3306
+
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
 

@@ -1,7 +1,10 @@
 import scrapy
 import json
+import mysql.connector
 
 class QuotesSpider(scrapy.Spider):
+    #  - Test function
+
     # name = "quotes"
 
     # # def start_requests(self):
@@ -43,6 +46,7 @@ class QuotesSpider(scrapy.Spider):
     #         yield scrapy.Request(next_page, callback=self.parse)
 
     # =======================================================================
+    #  - Test function
 
     # name = 'author'
 
@@ -68,6 +72,7 @@ class QuotesSpider(scrapy.Spider):
     #     }
 
     # =======================================================================
+    #  - Test function
 
     # name = "quotes"
 
@@ -91,7 +96,7 @@ class QuotesSpider(scrapy.Spider):
 
 
     # =======================================================================
-
+    # demo crawl data from VNE
     name = 'crawlVNE'
 
     start_urls = ['https://vnexpress.net/thoi-su']
@@ -113,3 +118,4 @@ class QuotesSpider(scrapy.Spider):
         filename = "vne.json"
         with open(filename, 'w') as f:
             f.write(json.dumps(res))
+
