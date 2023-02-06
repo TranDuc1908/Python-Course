@@ -1,4 +1,4 @@
-from tutorial.modelCustom.aa_core.mysqlLib import dbbasic as mysqlLib
+from tutorial.modelCustom.aa_core.mysqlLib import dbBasic as mysqlLib
 
 class Category(mysqlLib):
     def __init__(self):
