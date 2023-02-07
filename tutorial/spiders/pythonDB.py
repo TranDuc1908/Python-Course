@@ -1,16 +1,13 @@
 # encoding: utf-8
 
 import scrapy
-import json
-import unicodedata
-from ftfy import fix_encoding
+import requests
 from tutorial.modelCustom.category.category import Category as Category
 from tutorial.modelCustom.aa_core.core import Core as Core
 
-class QuotesSpider(scrapy.Spider):
+class crawlParentCate(scrapy.Spider):
     name = "crawlParentCate"
     start_urls = ["https://vnexpress.net/"]
-    
     def parse(self, response):
         clsCategories = Category()
         clsCore = Core()
@@ -20,14 +17,72 @@ class QuotesSpider(scrapy.Spider):
             i += 1
             if i < 3: 
                 continue
+            if i==5: break
+
             title = response.xpath("//ul[@class='parent']//li["+str(i)+"]/a/text()").extract()
             title = clsCore.unicodeTrans(title)
             if title == "Góc nhìn" or title == "Tất cả" or title == "Video": continue
             href = response.xpath("//ul[@class='parent']//li["+str(i)+"]/a/@href").extract()
             href = clsCore.unicodeTrans(href)
             z = clsCategories.insertOne(({"title":title}, {"url":href}))
+            print(title)
+
+# ===============================================
+
+class crawlChildCate(scrapy.Spider):
+    name = "crawlChildCate"
+    def start_requests(self):
+        clsCategories = Category()
+        clsCore = Core()
+        listCate = clsCategories.getAll(" order by id asc")
+        url = 'https://vnexpress.net'
+
+        if listCate is not None:
+            for oneItem in listCate:
+                cateUrl = url+oneItem["url"]
+                yield scrapy.Request(cateUrl, self.parse, oneItem["id"])
+                break
+
+    def parse(self, response, parent_id):
+        clsCategories = Category()
+        clsCore = Core()
+        print("=====================================================")
+        print(parent_id)
+        return True
+        for elm in response.xpath("//ul[@class='ul-nav-folder']//li/a"):
+            title = elm.xpath('.text()').extract()
+            title = clsCore.unicodeTrans(title)
+
+            href = elm.xpath('@href').extract()
+            href = clsCore.unicodeTrans(href)
+            
+            z = clsCategories.insertOne(({"title":title}, {"url":href}, {"parent_id":parent_id}))
             print(z)
 
-    name = "crawlChildCate"
-    def parse(self, response):
+# ===============================================
+
+class MySpider(scrapy.Spider):
+    name = "my_spider"
+    def __init__(self):
         clsCategories = Category()
+        listCates = clsCategories.getAll(" order by id asc")
+        res = []
+        for cate in listCates:
+            res.append('https://vnexpress.net'+cate["url"])
+        self.listUrl = res
+
+    def start_requests(self):
+        clsCategories = Category()
+        listCates = clsCategories.getAll(" order by id asc")
+        for oneItem in listCates:
+            yield scrapy.Request(
+                'https://vnexpress.net'+oneItem["url"], 
+                self.parse(),
+                cb_kwargs={'parent_id':oneItem["id"]},
+                headers={"User-Agent": "My UserAgent"},
+                meta={"proxy": "http://45.119.82.101:3333"}
+            )
+        
+    def parse(self, response, parent_id):
+        print("=====================================================")
+        print(parent_id)

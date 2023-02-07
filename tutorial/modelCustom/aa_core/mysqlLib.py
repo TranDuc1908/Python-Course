@@ -64,7 +64,12 @@ class dbBasic(object):
     
     # get all columns 
     def getAll(self, string):
-      self.cur.execute("SELECT * FROM "+self.tbl+" WHERE is_trash = 0 and "+string)
+      compare = str(string).strip()
+      compare = compare[:5]
+      if compare == "order" or compare == "limit":
+        self.cur.execute("SELECT * FROM "+self.tbl+" WHERE is_trash = 0 "+string)
+      else:
+        self.cur.execute("SELECT * FROM "+self.tbl+" WHERE is_trash = 0 and "+string)
       res = self.cur.fetchall()
       self.cur.close()
       self.conn.close()
