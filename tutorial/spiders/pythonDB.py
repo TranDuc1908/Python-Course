@@ -1,7 +1,6 @@
 # encoding: utf-8
 
 import scrapy
-import requests
 from tutorial.modelCustom.category.category import Category as Category
 from tutorial.modelCustom.aa_core.core import Core as Core
 
@@ -40,7 +39,7 @@ class crawlChildCate(scrapy.Spider):
         if listCate is not None:
             for oneItem in listCate:
                 cateUrl = url+oneItem["url"]
-                yield scrapy.Request(cateUrl, self.parse, oneItem["id"])
+                yield scrapy.Request(cateUrl, self.parse(parent_id=oneItem["id"]) )
                 break
 
     def parse(self, response, parent_id):
@@ -77,8 +76,7 @@ class MySpider(scrapy.Spider):
         for oneItem in listCates:
             yield scrapy.Request(
                 'https://vnexpress.net'+oneItem["url"], 
-                self.parse(),
-                cb_kwargs={'parent_id':oneItem["id"]},
+                self.parse(parent_id=oneItem["id"]),
                 headers={"User-Agent": "My UserAgent"},
                 meta={"proxy": "http://45.119.82.101:3333"}
             )
