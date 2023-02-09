@@ -13,3 +13,7 @@ class CategoryItem(scrapy.Item):
     title = scrapy.Field()
     url = scrapy.Field()
     
+class ChildCategoryItem(scrapy.Item):
+    title = scrapy.Field()
+    url = scrapy.Field()
+    parent_id = scrapy.Field()
