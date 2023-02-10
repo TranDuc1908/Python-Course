@@ -2,6 +2,7 @@ import scrapy
 from scrapy import signals
 from scrapy.xlib.pydispatch import dispatcher
 from ..items import ChildCategoryItem
+import datetime
 
 from tutorial.modelCustom.category.category import Category as Category
 from tutorial.modelCustom.aa_core.core import Core as Core
@@ -69,33 +70,38 @@ class CrawlerSpider(scrapy.Spider):
         print("Function go through here!")
         print("=================================================================")
         return True
+    
+    def arraySplitToChunk(self, xs, n):
+        n = max(1, n)
+        return (xs[i:i+n] for i in range(0, len(xs), n))
 
     def spider_opened(self):
         pass  
 
     def spider_closed(self):
-        print("=================================================================")
-        print("Spider close arrived!")
-        print("=================================================================")
         newItemCollection = self.itemCollection + self.itemCollection
-        count = 1
-        collectionToInsert = []
-        clsCategories = Category()
+        count = 0
+        self.lastCollection = []
+        self.bigCollection = []
+        time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         for item in newItemCollection:
-            if count == 1000:
-                for tmp in collectionToInsert:
-                    record = [
-                        {"title":tmp["title"]},
-                        {"url":tmp["url"]},
-                        {"parent_id":tmp["parent_id"]},
-                    ]
-                    res = clsCategories.insertOne(tuple(record))
-                    if res == False:
-                        print("================>Fail")
-                        break
-                collectionToInsert = []
-                collectionToInsert.append(item)
-                count = 2
-            else:
-                collectionToInsert.append(item)
-                count +=1
+            count+=1
+            self.bigCollection.append((item["title"],item["url"],item["parent_id"], time))
+        self.lastCollection = self.arraySplitToChunk(self.bigCollection, 1000)
+        clsCategories = Category()
+        print("=====================> start loop")
+        for z in self.lastCollection:
+            sqlQry = "INSERT INTO categories (`title`, `url`, `parent_id`, `created_at`) VALUES (%s, %s, %s, %s)"
+            c = clsCategories.testInsertAll(sqlQry,z)
+            print("=============================> RESULT")
+            print(c)
+
+
+            # for item in z:
+            #     print(type(item))
+            #     print(item)
+            #     break
+            #     for key in item:
+            #         if int(key)%1000 == 0:
+            #             print(item)
+            # break

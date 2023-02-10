@@ -35,8 +35,20 @@ class dbBasic(object):
     def showInfo(self):
       print(self.pkey + "|" + self.tbl)
 
+    # insert multi record
+    def testInsertAll(self, sqlQry, listTuple):
+      # print sqlQry
+      # print listTuple
+      # return True
+      try:
+          self.cur.executemany(sqlQry, listTuple)
+          self.conn.commit()
+          return True
+      except:
+        self.conn.rollback()
+        return False
     
-      
+    # insert a record 
     def insertOne(self, tup):
       feilds = ""
       sqlValues = ""
