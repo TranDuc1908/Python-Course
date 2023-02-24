@@ -3,88 +3,17 @@ import scrapy
 from scrapy import signals as Signals
 from scrapy.xlib.pydispatch import dispatcher as Dispatcher
 
-import re
 import json
 import datetime 
 import requests
-# from elasticsearch2 import Elasticsearch
+from python_elasticsearch.coreFunction.coreDatabase import CoreDatabase
+from python_elasticsearch.coreFunction.coreHelper import CoreHelper
 
-class coreFunction(scrapy.Spider):
+
+class crawlCategory(scrapy.Spider):
     def __init__(self):
-        self.host = "localhost"
-        self.port = 9200
-        self.domain = 'http://localhost:9200/'
-        self.headerConfig = {'Content-Type': 'application/json'}
-
-    # convert unicode to string
-    def unicodeTrans(self, string):
-        return u''.join(string).encode('utf-8').strip()
-
-    # sort 
-    def sortASC(self, _dict):
-        import operator
-        import collections
-        sortedDict = sorted(_dict.items(), key=operator.itemgetter(1))
-        sorted_dict = collections.OrderedDict(sortedDict)
-        return sorted_dict.items()
-    
-    # check if var is exist
-    def isset(self, x):
-        try: x
-        except NameError: x = False
-        return x
-
-    # insert a new document
-    def insertOne(self,_dict,_type):
-        _data = dict()
-        _data["doc"] = _dict
-        _data["doc"]["created_at"] = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        _data = json.dumps(_dict)
-        _url = self.domain + "project/" + _type
-        try:
-            resp = requests.post(_url, data=_data, headers=self.headerConfig)
-            resp = resp.json()
-            return resp
-        except:
-            return False
-    
-    # get all record by type
-    def getAll(self, _type, _from=0, _limit=1000):
-        url = self.domain + "project/" + _type + "/_search"
-        try:
-            resp = requests.request("get", url, data=json.dumps({"from": _from,"size": _limit}), headers=self.headerConfig)
-            resp = resp.json()
-            return resp["hits"]["hits"]
-        except:
-            return False
+        self.coreDatabase = CoreDatabase()
         
-    # search doc by properties
-    def searchByProperties(self, _type="", _dict={}, _dictNot={}, _from=0, _limit=1000):
-        qry = dict()
-        qry["query"] = {"match":_dict} if bool(_dict) is not False else { "match_all": {} }
-        qry.update({"from": _from,"size": _limit})
-        url = self.domain + "project/"+_type+"_search"
-        qry = json.dumps(qry)
-        resp = requests.get(url=url, data= qry, headers=self.headerConfig)
-        resp = resp.json()
-
-        try: resp["status"]
-        except: resp["status"] = False
-        if bool(resp["status"]) is not False and resp["status"] != 200: return {"res":False,"data":resp["error"]}
-        else: return {"res":True, "data" : resp["hits"]["hits"]}
-
-    # update doc's properties
-    def updateProperties(self, _type, id, _dict):
-        _data = dict()
-        _data["doc"] = _dict
-        _data["doc"]["updated_at"] = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        _data = json.dumps(_data)
-        url = self.domain + "project/"+_type+"/"+id+"/_update"
-        resp = requests.post(url=url, data=_data, headers=self.headerConfig)
-        return resp
-
-
-class crawlCategory(coreFunction):
     name = "crawlCategory"
     def start_requests(self):
         self.step_1_urls = "https://vnexpress.net/kinh-doanh"
@@ -99,18 +28,19 @@ class crawlCategory(coreFunction):
                 "title": title,
                 "url": "https://vnexpress.net"+href,
             }
-            z = self.insertOne(dataToCreate, "category")
+            z = self.coreDatabase.insertOne(dataToCreate, "category")
             print(z)
 
 
-class crawlNews(coreFunction):
+class crawlNews(scrapy.Spider):
     name = "crawlNews"
     
     def __init__(self):
-        super(crawlNews, self).__init__()
-
+        self.coreDatabase = CoreDatabase()
+        self.coreHelper = CoreHelper()
+        
     def start_requests(self):
-        listDoc = self.searchByProperties("category/")
+        listDoc = self.coreDatabase.getAllDocument("category")
         if listDoc["res"] is True:
             for oneDoc in listDoc["data"]:
                 url = oneDoc["_source"]["url"]
@@ -154,7 +84,7 @@ class crawlNews(coreFunction):
         detail_url = response.meta.get("detail_url")
 
         _date = response.xpath(".//span[contains(@class, 'date')]/text()").extract_first()
-        _date = ( self.unicodeTrans(_date).split())
+        _date = ( self.coreHelper.unicodeTrans(_date).split())
         _date = str(_date[2].rstrip(',')) +" "+ str(_date[3])+":00"
         _title = response.xpath("//meta[@property='og:title']/@content").extract_first()
         _intro = response.xpath("//meta[@property='og:description']/@content").extract_first()
@@ -172,5 +102,5 @@ class crawlNews(coreFunction):
             "category_title":category_title,
             "category_url":category_url
         }
-        ins= self.insertOne(newItem, "news")
+        ins= self.coreDatabase.insertOne(newItem, "news")
         print(ins)

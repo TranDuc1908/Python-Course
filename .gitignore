@@ -1,1 +1,5 @@
 .vscode
+*.pyc
+!spec/*.pyc
+*.xlsx
+!spec/*.xlsx
